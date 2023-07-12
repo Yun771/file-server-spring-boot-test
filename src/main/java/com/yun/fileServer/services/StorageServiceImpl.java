@@ -4,16 +4,15 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import java.io.File;
+import java.io.*;
 import java.net.MalformedURLException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @Service
 public class StorageServiceImpl implements StorageService {
@@ -27,7 +26,7 @@ public class StorageServiceImpl implements StorageService {
                 throw new RuntimeException("Failed load file");
             }
 
-            Path dir = Paths.get(this.rootFolder + File.separator + "pdf");
+            Path dir = Paths.get(this.rootFolder + File.separator + id);
 
             if (!Files.exists(dir)) {
                 Files.createDirectories(dir);
@@ -43,9 +42,9 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    public Resource load(String path) throws Exception {
+    public Resource load(String path, String id) throws Exception {
         try {
-            Path dir = Paths.get(this.rootFolder + File.separator + "pdf");
+            Path dir = Paths.get(this.rootFolder + File.separator + id);
             Resource resource = new UrlResource(dir.resolve(path).toUri());
 
             if (resource.exists() || resource.isReadable()) {
@@ -71,7 +70,71 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    public Stream<Path> loadAll() throws Exception {
-        return null;
+    public List<String> loadAll(String id) throws Exception {
+        List<String> files = new ArrayList<>();
+        Path dir = Paths.get(this.rootFolder + File.separator + id);
+
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
+            for (Path path : stream) {
+                if (!Files.isDirectory(path))
+                    files.add(path.getFileName().toString());
+            }
+            return files;
+
+        } catch (Exception e) {
+            throw e;
+        }
+    }
+
+    @Override
+    public StreamingResponseBody zipping(String id) throws Exception {
+
+        Path dir = Paths.get(this.rootFolder + File.separator + id);
+        int BUFFER_SIZE = 1024;
+
+        FileOutputStream fos = new FileOutputStream("dirCompressed.zip");
+        StreamingResponseBody streamResponseBody = (out) ->  {
+
+            List<String> paths;
+            try {
+                paths = this.loadAll(id);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            final ZipOutputStream zipOutputStream = new ZipOutputStream(fos);
+            ZipEntry zipEntry = null;
+            InputStream inputStream = null;
+
+            try {
+                for (String path : paths) {
+                    File file = new File(path);
+                    zipEntry = new ZipEntry(file.getName());
+
+                    inputStream = new FileInputStream(file);
+
+                    zipOutputStream.putNextEntry(zipEntry);
+                    byte[] bytes = new byte[BUFFER_SIZE];
+                    int length;
+                    while ((length = inputStream.read(bytes)) >= 0) {
+                        zipOutputStream.write(bytes, 0, length);
+                    }
+
+                }
+                // set zip size in response
+            } catch (IOException e) {
+            } finally {
+                if (inputStream != null) {
+                    inputStream.close();
+                }
+                if (zipOutputStream != null) {
+                    zipOutputStream.close();
+                }
+            }
+
+        };
+
+
+        return streamResponseBody;
     }
 }
+

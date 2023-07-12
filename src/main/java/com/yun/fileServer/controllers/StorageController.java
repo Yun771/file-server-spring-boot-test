@@ -34,14 +34,19 @@ public class StorageController {
 
     }
 
-    @GetMapping("/read/{fileName}")
-    public ResponseEntity<Resource> getFile(@PathVariable("fileName") String filename) throws Exception {
-        Resource file = storageService.load(filename);
+    @GetMapping("/read/{id}/{fileName}")
+    public ResponseEntity<Resource> getFile(@PathVariable("fileName") String filename, @PathVariable("id") String id) throws Exception {
+        Resource file = storageService.load(filename, id);
         String contentType = Files.probeContentType(file.getFile().toPath());
 
         return ResponseEntity
                 .ok()
                 .header(HttpHeaders.CONTENT_TYPE, contentType)
                 .body(file);
+    }
+
+    @GetMapping("/read/{id}")
+    public ResponseEntity<List<String>> filesFolder(@PathVariable("id") String id) throws Exception {
+        return ResponseEntity.ok(storageService.loadAll(id));
     }
 }
