@@ -1,5 +1,13 @@
-# Getting Started
+# Servidor básico de archivos
 
-### Reference Documentation
+## Acerca de:
 
-Prueba de servidor de archivos con Spring boot
+Servidor de archivos básico
+
+### Características:
+- Subir archivos
+- Crear un directorio para guardar documento
+- Descargar un ZIP de todos los archivos del directorio
+- Descargar el archivo
+
+_Este servidor es un practica_
