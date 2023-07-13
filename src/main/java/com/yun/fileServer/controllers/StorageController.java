@@ -21,9 +21,9 @@ public class StorageController {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<String> uploadFiles(@RequestParam("files") List<MultipartFile> files, @RequestParam("id") String id) {
+    public ResponseEntity<String> uploadFiles(@RequestParam("files") List<MultipartFile> files, @RequestParam("path") String path) {
         try {
-            var result = storageService.save(files, id);
+            var result = storageService.save(files, path);
 
             return ResponseEntity.ok(result.toString());
         } catch (Exception e) {
@@ -33,9 +33,9 @@ public class StorageController {
 
     }
 
-    @GetMapping("/read/{id}/{fileName}")
-    public ResponseEntity<Resource> getFile(@PathVariable("fileName") String filename, @PathVariable("id") String id) throws Exception {
-        Resource file = storageService.load(filename, id);
+    @GetMapping("/read/{path}/{fileName}")
+    public ResponseEntity<Resource> getFile(@PathVariable("fileName") String filename, @PathVariable("path") String path) throws Exception {
+        Resource file = storageService.load(filename, path);
         String contentType = Files.probeContentType(file.getFile().toPath());
 
         return ResponseEntity
@@ -44,19 +44,19 @@ public class StorageController {
                 .body(file);
     }
 
-    @GetMapping("/read/{id}")
-    public ResponseEntity<List<String>> filesFolder(@PathVariable("id") String id) throws Exception {
-        return ResponseEntity.ok(storageService.loadAll(id));
+    @GetMapping("/read/{path}")
+    public ResponseEntity<List<String>> filesFolder(@PathVariable("path") String path) throws Exception {
+        return ResponseEntity.ok(storageService.loadAll(path));
     }
 
-    @GetMapping("/download/{id}")
-    public ResponseEntity<Resource> downloadfiles(@PathVariable("id") String id) throws Exception {
-        Resource file = storageService.zipping(id);
+    @GetMapping("/download/{path}")
+    public ResponseEntity<Resource> downloadfiles(@PathVariable("path") String path) throws Exception {
+        Resource file = storageService.zipping(path);
         String contentType = Files.probeContentType(file.getFile().toPath());
-      HttpHeaders headers =  new HttpHeaders();
-      headers.setContentDispositionFormData(
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentDispositionFormData(
                 "attachment",
-                id +".zip"
+                path + ".zip"
         );
 
         return ResponseEntity
@@ -65,5 +65,12 @@ public class StorageController {
                 .header(HttpHeaders.CONTENT_TYPE, contentType)
                 .body(file);
 
+    }
+
+    // TODO: ELIMINAR CONTROLADOR E IMPLEMENTAR EL BORRADO DE ARCHIVOS MEDIANTE UNA TAREA CRON
+    @DeleteMapping
+    public ResponseEntity<?> deleteFiles() throws Exception {
+        var data = this.storageService.deleteTempFilesZip();
+        return ResponseEntity.ok(data);
     }
 }

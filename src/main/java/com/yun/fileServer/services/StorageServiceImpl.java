@@ -1,5 +1,7 @@
 package com.yun.fileServer.services;
 
+import ch.qos.logback.core.rolling.helper.FileStoreUtil;
+import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
@@ -10,9 +12,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.net.MalformedURLException;
 import java.nio.file.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -91,7 +91,14 @@ public class StorageServiceImpl implements StorageService {
         Path dir = Paths.get(this.rootFolder + File.separator + path);
 
         File directory = new File(dir.toUri());
-        File rootDirectory = new File(this.rootFolder.toUri());
+
+        Path tempDirectoory = Paths.get(this.rootFolder + File.separator + "tempFiles");
+
+        if (!Files.exists(tempDirectoory)) {
+            Files.createDirectories(tempDirectoory);
+        }
+
+        File rootDirectory = new File(tempDirectoory.toUri());
 
         if (!directory.exists()) {
             throw new RuntimeException("Could not found or directory file ");
@@ -126,6 +133,33 @@ public class StorageServiceImpl implements StorageService {
         }
 
         return resource;
+    }
+
+    @Override
+    public List<Map<String, Object>> deleteTempFilesZip() throws Exception {
+        Path tempDirectoory = Paths.get(this.rootFolder + File.separator + "tempFiles");
+
+        if (!Files.exists(tempDirectoory)) return new ArrayList<>();
+
+
+        List<Map<String, Object>> results = new ArrayList<>();
+// ? Otro metodo para eliminar todos los archivos
+//        FileUtils.cleanDirectory(tempDirectoory.toFile());
+
+        for (File file : Objects.requireNonNull(tempDirectoory.toFile().listFiles())) {
+            Map<String, Object> map = new HashMap<>();
+
+            map.put("name", file.getName());
+
+            Boolean deletedFile = file.delete();
+
+            map.put("deleted", deletedFile);
+
+            results.add(map);
+        }
+
+        return results;
+
     }
 }
 

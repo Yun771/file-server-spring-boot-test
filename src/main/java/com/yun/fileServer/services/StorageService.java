@@ -4,6 +4,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 public interface StorageService {
 
@@ -16,5 +17,7 @@ public interface StorageService {
     List<String> loadAll(String path) throws Exception;
 
     Resource zipping(String path) throws Exception;
+
+    List<Map<String, Object>> deleteTempFilesZip() throws Exception;
 
 }
