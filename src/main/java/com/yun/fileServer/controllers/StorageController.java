@@ -1,7 +1,6 @@
 package com.yun.fileServer.controllers;
 
 import com.yun.fileServer.services.StorageServiceImpl;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -48,5 +47,23 @@ public class StorageController {
     @GetMapping("/read/{id}")
     public ResponseEntity<List<String>> filesFolder(@PathVariable("id") String id) throws Exception {
         return ResponseEntity.ok(storageService.loadAll(id));
+    }
+
+    @GetMapping("/download/{id}")
+    public ResponseEntity<Resource> downloadfiles(@PathVariable("id") String id) throws Exception {
+        Resource file = storageService.zipping(id);
+        String contentType = Files.probeContentType(file.getFile().toPath());
+      HttpHeaders headers =  new HttpHeaders();
+      headers.setContentDispositionFormData(
+                "attachment",
+                id +".zip"
+        );
+
+        return ResponseEntity
+                .ok()
+                .headers(headers)
+                .header(HttpHeaders.CONTENT_TYPE, contentType)
+                .body(file);
+
     }
 }

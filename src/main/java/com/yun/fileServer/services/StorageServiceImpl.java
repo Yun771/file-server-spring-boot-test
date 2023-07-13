@@ -4,13 +4,15 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.net.MalformedURLException;
 import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -20,20 +22,20 @@ public class StorageServiceImpl implements StorageService {
     private final Path rootFolder = Paths.get(System.getProperty("user.home") + File.separator + "uploads");
 
     @Override
-    public String save(MultipartFile file, String id) throws Exception {
+    public String save(MultipartFile file, String path) {
         try {
             if (file.isEmpty()) {
                 throw new RuntimeException("Failed load file");
             }
 
-            Path dir = Paths.get(this.rootFolder + File.separator + id);
+            Path dir = Paths.get(this.rootFolder + File.separator + path);
 
             if (!Files.exists(dir)) {
                 Files.createDirectories(dir);
             }
 
 
-            Files.copy(file.getInputStream(), dir.resolve(file.getOriginalFilename()), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(file.getInputStream(), dir.resolve(Objects.requireNonNull(file.getOriginalFilename())), StandardCopyOption.REPLACE_EXISTING);
 
             return file.getOriginalFilename();
         } catch (Exception e) {
@@ -42,28 +44,28 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    public Resource load(String path, String id) throws Exception {
+    public Resource load(String fileName, String path) {
         try {
-            Path dir = Paths.get(this.rootFolder + File.separator + id);
-            Resource resource = new UrlResource(dir.resolve(path).toUri());
+            Path dir = Paths.get(this.rootFolder + File.separator + path);
+            Resource resource = new UrlResource(dir.resolve(fileName).toUri());
 
             if (resource.exists() || resource.isReadable()) {
                 return resource;
             } else {
-                throw new RuntimeException("Could not found or load file " + path);
+                throw new RuntimeException("Could not found or load file " + fileName);
             }
 
         } catch (MalformedURLException e) {
-            throw new RuntimeException("Could not found or load file " + path);
+            throw new RuntimeException("Could not found or load file " + fileName);
         }
     }
 
     @Override
-    public List<String> save(List<MultipartFile> files, String id) throws Exception {
+    public List<String> save(List<MultipartFile> files, String path) {
         List<String> paths = new ArrayList<>();
 
         for (MultipartFile file : files) {
-            paths.add(save(file, id));
+            paths.add(save(file, path));
         }
 
         return paths;
@@ -81,60 +83,49 @@ public class StorageServiceImpl implements StorageService {
             }
             return files;
 
-        } catch (Exception e) {
-            throw e;
         }
     }
 
     @Override
-    public StreamingResponseBody zipping(String id) throws Exception {
+    public Resource zipping(String path) throws Exception {
+        Path dir = Paths.get(this.rootFolder + File.separator + path);
 
-        Path dir = Paths.get(this.rootFolder + File.separator + id);
-        int BUFFER_SIZE = 1024;
+        File directory = new File(dir.toUri());
+        File rootDirectory = new File(this.rootFolder.toUri());
 
-        FileOutputStream fos = new FileOutputStream("dirCompressed.zip");
-        StreamingResponseBody streamResponseBody = (out) ->  {
+        if (!directory.exists()) {
+            throw new RuntimeException("Could not found or directory file ");
 
-            List<String> paths;
-            try {
-                paths = this.loadAll(id);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-            final ZipOutputStream zipOutputStream = new ZipOutputStream(fos);
-            ZipEntry zipEntry = null;
-            InputStream inputStream = null;
+        }
 
-            try {
-                for (String path : paths) {
-                    File file = new File(path);
-                    zipEntry = new ZipEntry(file.getName());
+        File zipFile = File.createTempFile(path, ".zip", rootDirectory);
 
-                    inputStream = new FileInputStream(file);
+        ZipOutputStream zipOutputStream = new ZipOutputStream(new FileOutputStream(zipFile));
+        for (File file : Objects.requireNonNull(directory.listFiles())) {
+            ZipEntry zipEntry = new ZipEntry(file.getName());
+            zipOutputStream.putNextEntry(zipEntry);
 
-                    zipOutputStream.putNextEntry(zipEntry);
-                    byte[] bytes = new byte[BUFFER_SIZE];
-                    int length;
-                    while ((length = inputStream.read(bytes)) >= 0) {
-                        zipOutputStream.write(bytes, 0, length);
-                    }
+            FileInputStream fileInputStream = new FileInputStream(file);
+            byte[] buffer = new byte[1024];
 
-                }
-                // set zip size in response
-            } catch (IOException e) {
-            } finally {
-                if (inputStream != null) {
-                    inputStream.close();
-                }
-                if (zipOutputStream != null) {
-                    zipOutputStream.close();
-                }
+            int bytesRead;
+
+            while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+                zipOutputStream.write(buffer, 0, bytesRead);
             }
 
-        };
+            fileInputStream.close();
+        }
 
+        zipOutputStream.close();
 
-        return streamResponseBody;
+        Resource resource = new UrlResource(zipFile.toURI());
+
+        if (!resource.exists() || !resource.isReadable()) {
+            throw new RuntimeException("Could not found or load file ");
+        }
+
+        return resource;
     }
 }
 
