@@ -1,4 +1,4 @@
-package com.yun.fileServer.services;
+package com.yun.fileServer.exceptions;
 
 public class NotFileFound extends Exception {
     public NotFileFound() {

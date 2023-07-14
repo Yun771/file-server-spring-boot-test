@@ -1,7 +1,5 @@
 package com.yun.fileServer.services;
 
-import ch.qos.logback.core.rolling.helper.FileStoreUtil;
-import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
@@ -136,17 +134,17 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    public List<Map<String, Object>> deleteTempFilesZip() throws Exception {
-        Path tempDirectoory = Paths.get(this.rootFolder + File.separator + "tempFiles");
+    public List<Map<String, Object>> deleteTempFilesZip() {
+        Path tempDirectory = Paths.get(this.rootFolder + File.separator + "tempFiles");
 
-        if (!Files.exists(tempDirectoory)) return new ArrayList<>();
+        if (!Files.exists(tempDirectory)) return new ArrayList<>();
 
 
         List<Map<String, Object>> results = new ArrayList<>();
 // ? Otro metodo para eliminar todos los archivos
-//        FileUtils.cleanDirectory(tempDirectoory.toFile());
+//        FileUtils.cleanDirectory(tempDirectory.toFile());
 
-        for (File file : Objects.requireNonNull(tempDirectoory.toFile().listFiles())) {
+        for (File file : Objects.requireNonNull(tempDirectory.toFile().listFiles())) {
             Map<String, Object> map = new HashMap<>();
 
             map.put("name", file.getName());
