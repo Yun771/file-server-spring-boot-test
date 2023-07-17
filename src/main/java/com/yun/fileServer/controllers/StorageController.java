@@ -1,9 +1,9 @@
 package com.yun.fileServer.controllers;
 
+import com.yun.fileServer.models.FileDetails;
 import com.yun.fileServer.services.StorageServiceImpl;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,16 +20,18 @@ public class StorageController {
         this.storageService = storageService;
     }
 
-    @PostMapping("/upload")
-    public ResponseEntity<String> uploadFiles(@RequestParam("files") List<MultipartFile> files, @RequestParam("path") String path) {
-        try {
-            var result = storageService.save(files, path);
 
-            return ResponseEntity.ok(result.toString());
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error");
-        }
+    @PostMapping("/upload")
+    public ResponseEntity<FileDetails> uploadFile(@RequestParam("file") MultipartFile file, @RequestParam("path") String path) {
+
+        return ResponseEntity.ok(storageService.save(file, path));
+    }
+
+    @PostMapping("/multi/upload")
+    public ResponseEntity<List<FileDetails>> uploadFiles(@RequestParam("files") List<MultipartFile> files, @RequestParam("path") String path) {
+        var result = storageService.save(files, path);
+
+        return ResponseEntity.ok(result);
 
     }
 
@@ -45,12 +47,12 @@ public class StorageController {
     }
 
     @GetMapping("/read/{path}")
-    public ResponseEntity<List<String>> filesFolder(@PathVariable("path") String path) throws Exception {
+    public ResponseEntity<List<FileDetails>> filesFolder(@PathVariable("path") String path) throws Exception {
         return ResponseEntity.ok(storageService.loadAll(path));
     }
 
     @GetMapping("/download/{path}")
-    public ResponseEntity<Resource> downloadfiles(@PathVariable("path") String path) throws Exception {
+    public ResponseEntity<Resource> downloadFiles(@PathVariable("path") String path) throws Exception {
         Resource file = storageService.zipping(path);
         String contentType = Files.probeContentType(file.getFile().toPath());
         HttpHeaders headers = new HttpHeaders();

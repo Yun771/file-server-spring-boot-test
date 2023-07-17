@@ -1,9 +1,11 @@
 package com.yun.fileServer.services;
 
+import com.yun.fileServer.models.FileDetails;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -20,7 +22,7 @@ public class StorageServiceImpl implements StorageService {
     private final Path rootFolder = Paths.get(System.getProperty("user.home") + File.separator + "uploads");
 
     @Override
-    public String save(MultipartFile file, String path) {
+    public FileDetails save(MultipartFile file, String path) {
         try {
             if (file.isEmpty()) {
                 throw new RuntimeException("Failed load file");
@@ -32,10 +34,22 @@ public class StorageServiceImpl implements StorageService {
                 Files.createDirectories(dir);
             }
 
+            file.getOriginalFilename();
+            System.out.println(file.getOriginalFilename());
+
+
 
             Files.copy(file.getInputStream(), dir.resolve(Objects.requireNonNull(file.getOriginalFilename())), StandardCopyOption.REPLACE_EXISTING);
 
-            return file.getOriginalFilename();
+            FileDetails fileDetails = new FileDetails();
+
+            fileDetails.setPath(path);
+            fileDetails.setFullName(file.getOriginalFilename());
+            fileDetails.setFileName(FilenameUtils.removeExtension(file.getOriginalFilename()));
+            fileDetails.setContentType(file.getContentType());
+            fileDetails.setExtension(FilenameUtils.getExtension(file.getOriginalFilename()));
+
+            return fileDetails;
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
@@ -59,8 +73,8 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    public List<String> save(List<MultipartFile> files, String path) {
-        List<String> paths = new ArrayList<>();
+    public List<FileDetails> save(List<MultipartFile> files, String path) {
+        List<FileDetails> paths = new ArrayList<>();
 
         for (MultipartFile file : files) {
             paths.add(save(file, path));
@@ -70,16 +84,25 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    public List<String> loadAll(String id) throws Exception {
-        List<String> files = new ArrayList<>();
-        Path dir = Paths.get(this.rootFolder + File.separator + id);
+    public List<FileDetails> loadAll(String path) throws Exception {
+        List<FileDetails> fileDetails = new ArrayList<>();
+        Path dir = Paths.get(this.rootFolder + File.separator + path);
 
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
-            for (Path path : stream) {
-                if (!Files.isDirectory(path))
-                    files.add(path.getFileName().toString());
+            for (Path filePath : stream) {
+                if (!Files.isDirectory(filePath)){
+                    FileDetails details = new FileDetails();
+                    details.setFullName(filePath.getFileName().toString());
+                    details.setPath(path);
+                    details.setExtension(FilenameUtils.getExtension(filePath.getFileName().toString()));
+                    details.setFileName(FilenameUtils.removeExtension(filePath.getFileName().toString()));
+                    details.setContentType(Files.probeContentType(filePath));
+
+                    fileDetails.add(details);
+
+                }
             }
-            return files;
+            return fileDetails;
 
         }
     }
@@ -90,13 +113,13 @@ public class StorageServiceImpl implements StorageService {
 
         File directory = new File(dir.toUri());
 
-        Path tempDirectoory = Paths.get(this.rootFolder + File.separator + "tempFiles");
+        Path tempDirectory = Paths.get(this.rootFolder + File.separator + "tempFiles");
 
-        if (!Files.exists(tempDirectoory)) {
-            Files.createDirectories(tempDirectoory);
+        if (!Files.exists(tempDirectory)) {
+            Files.createDirectories(tempDirectory);
         }
 
-        File rootDirectory = new File(tempDirectoory.toUri());
+        File rootDirectory = new File(tempDirectory.toUri());
 
         if (!directory.exists()) {
             throw new RuntimeException("Could not found or directory file ");
@@ -135,28 +158,32 @@ public class StorageServiceImpl implements StorageService {
 
     @Override
     public List<Map<String, Object>> deleteTempFilesZip() {
-        Path tempDirectory = Paths.get(this.rootFolder + File.separator + "tempFiles");
+        try {
+            Path tempDirectory = Paths.get(this.rootFolder + File.separator + "tempFiles");
 
-        if (!Files.exists(tempDirectory)) return new ArrayList<>();
+            if (!Files.exists(tempDirectory)) return new ArrayList<>();
 
 
-        List<Map<String, Object>> results = new ArrayList<>();
-// ? Otro metodo para eliminar todos los archivos
+            List<Map<String, Object>> results = new ArrayList<>();
+// ? Otro método para eliminar todos los archivos
 //        FileUtils.cleanDirectory(tempDirectory.toFile());
 
-        for (File file : Objects.requireNonNull(tempDirectory.toFile().listFiles())) {
-            Map<String, Object> map = new HashMap<>();
+            for (File file : Objects.requireNonNull(tempDirectory.toFile().listFiles())) {
+                Map<String, Object> map = new HashMap<>();
 
-            map.put("name", file.getName());
+                map.put("name", file.getName());
 
-            Boolean deletedFile = file.delete();
+                Boolean deletedFile = file.delete();
 
-            map.put("deleted", deletedFile);
+                map.put("deleted", deletedFile);
 
-            results.add(map);
+                results.add(map);
+            }
+
+            return results;
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage(), e);
         }
-
-        return results;
 
     }
 }
