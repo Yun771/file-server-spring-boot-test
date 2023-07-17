@@ -46,7 +46,6 @@ public class StorageServiceImpl implements StorageService {
             fileDetails.setPath(path);
             fileDetails.setFullName(file.getOriginalFilename());
             fileDetails.setFileName(FilenameUtils.removeExtension(file.getOriginalFilename()));
-            fileDetails.setContentType(file.getContentType());
             fileDetails.setExtension(FilenameUtils.getExtension(file.getOriginalFilename()));
 
             return fileDetails;
@@ -96,7 +95,6 @@ public class StorageServiceImpl implements StorageService {
                     details.setPath(path);
                     details.setExtension(FilenameUtils.getExtension(filePath.getFileName().toString()));
                     details.setFileName(FilenameUtils.removeExtension(filePath.getFileName().toString()));
-                    details.setContentType(Files.probeContentType(filePath));
 
                     fileDetails.add(details);
 

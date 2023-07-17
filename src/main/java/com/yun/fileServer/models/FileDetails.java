@@ -4,7 +4,6 @@ public class FileDetails {
     private String path;
     private String fileName;
     private String fullName;
-    private String contentType;
     private String extension;
 
     public String getPath() {
@@ -31,13 +30,6 @@ public class FileDetails {
         this.fullName = fullName;
     }
 
-    public String getContentType() {
-        return contentType;
-    }
-
-    public void setContentType(String contentType) {
-        this.contentType = contentType;
-    }
 
     public String getExtension() {
         return extension;
