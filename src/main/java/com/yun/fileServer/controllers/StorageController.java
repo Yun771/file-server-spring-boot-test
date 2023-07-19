@@ -4,6 +4,7 @@ import com.yun.fileServer.models.FileDetails;
 import com.yun.fileServer.services.StorageServiceImpl;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,8 +21,12 @@ public class StorageController {
         this.storageService = storageService;
     }
 
+    @GetMapping
+    public String root() {
+        return "Hola";
+    }
 
-    @PostMapping("/upload")
+    @PostMapping(value = "/upload")
     public ResponseEntity<FileDetails> uploadFile(@RequestParam("file") MultipartFile file, @RequestParam("path") String path) {
 
         return ResponseEntity.ok(storageService.save(file, path));
