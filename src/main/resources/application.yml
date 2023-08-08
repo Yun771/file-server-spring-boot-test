@@ -1,4 +1,6 @@
 spring:
+  application:
+    name: File-server
   servlet:
     multipart:
       max-request-size: 10MB

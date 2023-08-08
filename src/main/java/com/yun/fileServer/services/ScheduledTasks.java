@@ -8,7 +8,7 @@ import java.util.Date;
 @Component
 public class ScheduledTasks {
 
-    @Scheduled(cron = "0 * * * * *")
+    @Scheduled(cron = "0 0 3 * * *")
     public void testTask() {
         // TODO: IMPLEMENTAR EL METODO PARA ELIMINAR LOS ARCHIVOS TEMPORALES CADA DIA A LAS 3 AM
         System.out.println(new Date() + " hola");
