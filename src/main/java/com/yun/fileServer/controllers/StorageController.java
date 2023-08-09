@@ -44,9 +44,14 @@ public class StorageController {
     public ResponseEntity<Resource> getFile(@PathVariable("fileName") String filename, @PathVariable("path") String path) throws Exception {
         Resource file = storageService.load(filename, path);
         String contentType = Files.probeContentType(file.getFile().toPath());
-
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentDispositionFormData(
+                "attachment",
+                file.getFilename()
+        );
         return ResponseEntity
                 .ok()
+                .headers(headers)
                 .header(HttpHeaders.CONTENT_TYPE, contentType)
                 .body(file);
     }
